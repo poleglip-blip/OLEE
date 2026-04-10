@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON MARIO CLASH</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* HIGH-SATURATION NEON COLORS */
+            --neon-red: #ff0055;
+            --neon-green: #00ff44;
+            --mario-blue: #0099ff;
+            --dirt-brown: #8c5200;
+            --grass-green: #00b300;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            font-family: 'VT323', monospace; /* Applying Mario Pixel Font */
+            overflow: hidden;
+            color: white;
+            user-select: none;
+        }
+
+        #game-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- Split Screen --- */
+        .team-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: linear-gradient(180deg, var(--mario-blue) 0%, #a8c8ff 100%);
+            border: 8px solid #000;
+        }
+
+        .mario-side { border-right: 4px solid var(--neon-red); box-shadow: inset -15px 0 30px rgba(255, 0, 85, 0.4); }
+        .luigi-side { border-left: 4px solid var(--neon-green); box-shadow: inset 15px 0 30px rgba(0, 255, 68, 0.4); }
+
+        /* --- Graphics World --- */
+        .world {
+            height: 45%;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 25px solid var(--dirt-brown);
+        }
+
+        /* Warp Pipes */
+        .pipe {
+            position: absolute;
+            bottom: 45px;
+            width: 60px;
+            height: 100px;
+            background: #00aa00;
+            border: 4px solid #000;
+            box-shadow: inset 8px 0 0 rgba(255,255,255,0.3);
+        }
+        .pipe-top {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 72px;
+            height: 30px;
+            background: #00cc00;
+            border: 4px solid #000;
+        }
+
+        /* Bushes */
+        .bush {
+            position: absolute;
+            bottom: 45px;
+            width: 80px;
+            height: 40px;
+            background: #00dd00;
+            border-radius: 40px 40px 0 0;
+            border: 4px solid #000;
+        }
+
+        /* Textured Ground */
+        .ground-surface {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 25px;
+            background: var(--grass-green);
+            background-image: repeating-linear-gradient(45deg, #00aa00, #00aa00 10px, var(--grass-green) 10px, var(--grass-green) 20px);
+        }
+
+        /* 8 Numbered Bricks */
+        .brick-row {
+            position: absolute;
+            bottom: 80px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 10px;
+            z-index: 5;
+        }
+
+        .brick {
+            width: 45px;
+            height: 45px;
+            background: #d34e1a;
+            border: 3px solid #000;
+            box-shadow: inset 4px 4px #ff7f50, inset -4px -4px #802000;
+            color: rgba(255,255,255,0.7);
+            font-size: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- Distinct Characters --- */
+        .character {
+            position: absolute;
+            bottom: 125px; /* Sits on bricks */
+            left: 5%;
+            width: 50px;
+            height: 70px;
+            transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), bottom 0.2s;
+            z-index: 10;
+        }
+
+        /* Advanced CSS Mario */
+        .mario-hat { position:absolute; top:0; left:5px; width:35px; height:10px; background:var(--neon-red); border:3px solid #000; border-radius:10px 10px 0 0; box-shadow:0 0 10px var(--neon-red); }
+        .mario-face { position:absolute; top:13px; left:10px; width:25px; height:25px; background:#ffdbac; border:3px solid #000; }
+        .mario-overalls { position:absolute; top:38px; left:5px; width:35px; height:30px; background:blue; border:3px solid #000; border-radius:5px; }
+        .mario-shirt { position:absolute; top:40px; left:12px; width:21px; height:10px; background:var(--neon-red); border-radius:3px;}
+
+        /* Advanced CSS Luigi */
+        .luigi-hat { position:absolute; top:0; left:5px; width:30px; height:12px; background:var(--neon-green); border:3px solid #000; border-radius:10px 10px 0 0; box-shadow:0 0 10px var(--neon-green); }
+        .luigi-face { position:absolute; top:15px; left:10px; width:20px; height:30px; background:#ffdbac; border:3px solid #000; }
+        .luigi-overalls { position:absolute; top:45px; left:5px; width:30px; height:30px; background:blue; border:3px solid #000; border-radius:5px; }
+        .luigi-shirt { position:absolute; top:47px; left:10px; width:16px; height:10px; background:var(--neon-green); border-radius:3px; }
+
+        /* --- UI PANELS --- */
+        .ui {
+            flex-grow: 1;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border-top: 6px solid gold;
+        }
+
+        .team-title {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        .question-card {
+            background: white;
+            color: #000;
+            width: 90%;
+            padding: 20px;
+            border-radius: 15px;
+            border: 8px solid gold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .q-en { font-size: 1.8rem; margin-bottom: 5px; }
+        .q-zh { font-size: 1.5rem; color: #555; }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .btn {
+            padding: 30px 10px;
+            font-size: 2.2rem;
+            border: 4px solid #fff;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-family: 'VT323', monospace;
+            text-shadow: 2px 2px #000;
+        }
+
+        .btn-m { background: var(--neon-red); box-shadow: 0 0 20px var(--neon-red); }
+        .btn-l { background: var(--neon-green); color: black; box-shadow: 0 0 20px var(--neon-green); }
+
+        /* --- Feedback --- */
+        .feedback {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 150px;
+            display: none;
+            z-index: 100;
+            text-shadow: 0 0 20px #fff;
+        }
+
+        #win-screen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="team-side mario-side">
+            <div class="world">
+                <div class="pipe" style="left: 15%;"><div class="pipe-top"></div></div>
+                <div class="bush" style="left: 60%;"></div>
+                
+                <div class="brick-row">
+                    <div class="brick">1</div><div class="brick">2</div><div class="brick">3</div><div class="brick">4</div>
+                    <div class="brick">5</div><div class="brick">6</div><div class="brick">7</div><div class="brick">8</div>
+                </div>
+
+                <div id="mario-char" class="character">
+                    <div class="mario-hat"></div>
+                    <div class="mario-face"></div>
+                    <div class="mario-overalls"><div class="mario-shirt"></div></div>
+                </div>
+
+                <div class="ground-surface"></div>
+                <div style="position: absolute; right: 10px; bottom: 80px; font-size: 45px;">🏁</div>
+            </div>
+            <div class="ui">
+                <div class="team-title" style="color: var(--neon-red);">TEAM MARIO</div>
+                <div class="question-card">
+                    <div id="q1-en" class="q-en">?</div>
+                    <div id="q1-zh" class="q-zh">?</div>
+                </div>
+                <div class="btn-grid">
+                    <button class="btn btn-m" onclick="checkAnswer(1, 0)">A</button>
+                    <button class="btn btn-m" onclick="checkAnswer(1, 1)">B</button>
+                </div>
+            </div>
+            <div id="f1" class="feedback"></div>
+        </div>
+
+        <div class="team-side luigi-side">
+            <div class="world">
+                <div class="bush" style="left: 20%;"></div>
+                <div class="pipe" style="left: 70%; height: 80px;"><div class="pipe-top"></div></div>
+
+                <div class="brick-row">
+                    <div class="brick">1</div><div class="brick">2</div><div class="brick">3</div><div class="brick">4</div>
+                    <div class="brick">5</div><div class="brick">6</div><div class="brick">7</div><div class="brick">8</div>
+                </div>
+
+                <div id="luigi-char" class="character">
+                    <div class="luigi-hat"></div>
+                    <div class="luigi-face"></div>
+                    <div class="luigi-overalls"><div class="luigi-shirt"></div></div>
+                </div>
+
+                <div class="ground-surface"></div>
+                <div style="position: absolute; right: 10px; bottom: 80px; font-size: 45px;">🏁</div>
+            </div>
+            <div class="ui">
+                <div class="team-title" style="color: var(--neon-green);">TEAM LUIGI</div>
+                <div class="question-card">
+                    <div id="q2-en" class="q-en">?</div>
+                    <div id="q2-zh" class="q-zh">?</div>
+                </div>
+                <div class="btn-grid">
+                    <button class="btn btn-l" onclick="checkAnswer(2, 0)">A</button>
+                    <button class="btn btn-l" onclick="checkAnswer(2, 1)">B</button>
+                </div>
+            </div>
+            <div id="f2" class="feedback"></div>
+        </div>
+    </div>
+
+    <div id="win-screen">
+        <h1 id="winner-text" style="font-size: 80px;">WINNER!</h1>
+        <button class="btn btn-m" style="width: 300px;" onclick="location.reload()">PLAY AGAIN</button>
+    </div>
+
+    <script>
+        const quiz = [
+            { q: "How many glasses of water daily?", zh: "我們每天應該喝幾杯水？", a: ["2–4 glasses", "8–10 glasses"], c: 1 },
+            { q: "Is pooping 1–2 times a day healthy?", zh: "每天排便1-2次健康嗎？", a: ["No", "Yes"], c: 1 },
+            { q: "Are sweet potatoes good for poop?", zh: "地瓜對排便有幫助嗎？", a: ["No", "Yes"], c: 1 },
+            { q: "Is sleeping late good for health?", zh: "晚睡對健康好嗎？", a: ["Yes", "No"], c: 1 },
+            { q: "If your poop is hard, is it healthy?", zh: "大便很硬是健康的嗎？", a: ["Yes", "No"], c: 1 },
+            { q: "Watery poop means diarrhea?", zh: "水狀大便是腹瀉嗎？", a: ["No", "Yes"], c: 1 }
+        ];
+
+        let p1 = { pos: 0, q: 0 };
+        let p2 = { pos: 0, q: 3 }; // Luigi starts at Q3 to avoid copying
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(freq, type, dur) {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.type = type; o.frequency.value = freq;
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + dur);
+        }
+
+        function loadQ(team) {
+            const s = team === 1 ? p1 : p2;
+            const q = quiz[s.q];
+            document.getElementById(`q${team}-en`).innerText = q.q;
+            document.getElementById(`q${team}-zh`).innerText = q.zh;
+            const btns = document.querySelectorAll(team === 1 ? '.btn-m' : '.btn-l');
+            btns[0].innerText = "A. " + q.a[0];
+            btns[1].innerText = "B. " + q.a[1];
+        }
+
+        function checkAnswer(team, choice) {
+            const s = team === 1 ? p1 : p2;
+            const feedback = document.getElementById(`f${team}`);
+            const isCorrect = choice === quiz[s.q].c;
+
+            feedback.style.display = 'block';
+            if (isCorrect) {
+                feedback.innerText = "✅";
+                feedback.style.color = "lime";
+                playSfx(600, 'square', 0.1); // Jump
+                s.pos++;
+                const char = document.getElementById(team === 1 ? 'mario-char' : 'luigi-char');
+                char.style.left = (s.pos * 11) + "%";
+                char.style.bottom = "170px"; // Jump height
+                setTimeout(() => char.style.bottom = "125px", 250);
+                if (s.pos >= 8) return showWin(team);
+            } else {
+                feedback.innerText = "❌";
+                feedback.style.color = "red";
+                playSfx(150, 'sawtooth', 0.3); // Wrong
+            }
+
+            setTimeout(() => {
+                feedback.style.display = 'none';
+                s.q = (s.q + 1) % quiz.length;
+                loadQ(team);
+            }, 800);
+        }
+
+        function showWin(team) {
+            document.getElementById('win-screen').style.display = 'flex';
+            const wt = document.getElementById('winner-text');
+            wt.innerText = team === 1 ? "MARIO WINS!" : "LUIGI WINS!";
+            wt.style.color = team === 1 ? 'var(--neon-red)' : 'var(--neon-green)';
+            playSfx(523, 'square', 0.4);
+            setTimeout(() => playSfx(1046, 'square', 0.6), 200);
+        }
+
+        loadQ(1); loadQ(2);
+    </script>
+</body>
+</html>
